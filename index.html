@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>De los clics a las decisiones · Presentación</title>
+<meta name="description" content="Presentación para explicar CTR y árboles de decisión antes de usar el simulador.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f4f4ec;--ink:#193a3b;--green:#176b58;--lime:#d8ed8d;--orange:#bb5a3a;--line:#d4dfd5;--muted:#546f6c;--white:#fffef9;--soft:#e6eee1;--warm:#f9e8dc;--sun:#fff7d6;--display:"Bricolage Grotesque","Arial Narrow",Arial,sans-serif}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,Helvetica,sans-serif;overflow:hidden}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid #b16c14;outline-offset:3px}
+h1,h2,h3,p{margin:0}
+h1,h2{font-family:var(--display);font-weight:800;letter-spacing:-.035em}
+h1{font-size:clamp(46px,6.4vw,104px);line-height:.92}
+h2{font-size:clamp(34px,4.4vw,72px);line-height:.98;margin-bottom:clamp(18px,3vh,34px)}
+h3{font-family:var(--display);font-size:clamp(22px,2vw,32px);line-height:1.1;margin-bottom:10px}
+p{font-size:clamp(18px,1.55vw,26px);line-height:1.45}
+.kicker{display:block;color:var(--green);font-weight:800;font-size:clamp(14px,1.1vw,18px);margin-bottom:clamp(12px,2vh,22px)}
+.muted{color:var(--muted)}
+.lead{font-size:clamp(21px,2vw,32px);line-height:1.35;color:var(--muted)}
+.big{font-family:var(--display);font-weight:800;letter-spacing:-.03em}
+
+/* Escenario */
+.slide{position:fixed;inset:0 0 64px 0;display:none;overflow-y:auto;padding:clamp(24px,5vh,60px) clamp(20px,6vw,96px)}
+.slide.active{display:flex}
+.inner{width:100%;max-width:1320px;margin:auto}
+.dark{background:var(--ink);color:var(--paper)}
+.dark .kicker{color:var(--lime)}
+.dark .lead,.dark .muted{color:#c9d9c8}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,4vw,64px);align-items:center}
+.grid2.wide-left{grid-template-columns:1.15fr .85fr}
+.grid2>*,.grid3>*{min-width:0}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(14px,2vw,28px)}
+
+/* Pasos que aparecen con cada clic */
+.step{opacity:0;transform:translateY(14px);transition:opacity .35s ease,transform .35s ease}
+.step.shown{opacity:1;transform:none}
+svg .step{transform:none}
+.step-follow{opacity:0;transition:opacity .35s ease}
+.step-follow.shown{opacity:1}
+
+/* Portada: la cuadrícula de 100 */
+.hundred{display:grid;grid-template-columns:repeat(10,1fr);gap:clamp(5px,.7vw,10px);width:min(100%,520px);margin-left:auto}
+.hundred i{aspect-ratio:1;border-radius:50%;background:#35585a;opacity:0;animation:pop .4s ease forwards}
+.hundred i.click{animation:pop .4s ease forwards,toGreen .5s ease forwards}
+.hundred i.buy{animation:pop .4s ease forwards,toLime .5s ease forwards}
+.cover-legend{display:flex;gap:clamp(12px,2vw,28px);flex-wrap:wrap;justify-content:flex-end;margin-top:22px;font-size:clamp(14px,1.1vw,18px);color:#c9d9c8}
+.cover-legend span{display:flex;gap:8px;align-items:center}
+.cover-legend b{width:14px;height:14px;border-radius:50%;display:inline-block}
+@keyframes pop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:none}}
+@keyframes toGreen{to{background:#4fae8f}}
+@keyframes toLime{to{background:var(--lime)}}
+.cover-meta{margin-top:clamp(20px,4vh,40px);display:flex;gap:10px;flex-wrap:wrap}
+.chip{display:inline-block;border:1px solid #5e7b6a;border-radius:30px;padding:8px 14px;font-size:clamp(14px,1vw,17px);color:#dbe8d6}
+
+/* Conteo de manos */
+.tally{display:grid;gap:clamp(10px,1.6vh,18px)}
+.tally-row{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:12px;background:var(--white);border:1px solid var(--line);border-radius:14px;padding:clamp(12px,2vh,20px) clamp(16px,2vw,26px)}
+.tally-row p{font-weight:bold}
+.tally-row output{font-family:var(--display);font-weight:800;font-size:clamp(34px,3.4vw,56px);min-width:2ch;text-align:center;color:var(--green)}
+.round{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--paper);font-size:24px;font-weight:bold;color:var(--ink)}
+.round:hover{border-color:var(--green)}
+.callout{background:var(--soft);border-left:5px solid var(--green);padding:clamp(14px,2vh,20px) clamp(16px,2vw,24px);border-radius:0 10px 10px 0;margin-top:clamp(16px,3vh,28px)}
+.callout p{font-size:clamp(18px,1.5vw,24px)}
+
+/* Embudo */
+.funnel{display:grid;gap:clamp(10px,1.6vh,16px)}
+.fstep{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,.55fr);gap:16px;align-items:center}
+.fbar{border-radius:12px;padding:clamp(14px,2.2vh,24px) clamp(16px,1.8vw,24px);color:#fff;font-family:var(--display);font-weight:800;font-size:clamp(22px,2.2vw,36px);line-height:1.05}
+.fstep:nth-child(1) .fbar{background:var(--green)}
+.fstep:nth-child(2) .fbar{background:#2f7f6a;width:72%}
+.fstep:nth-child(3) .fbar{background:var(--ink);width:46%}
+.fname{font-size:clamp(17px,1.4vw,23px);border-left:3px solid var(--orange);padding-left:14px;line-height:1.3}
+.fname b{display:block;font-family:var(--display);font-size:clamp(22px,2vw,32px);color:var(--orange)}
+
+/* Tarjetas */
+.card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:clamp(18px,2.4vw,32px)}
+.card p{font-size:clamp(17px,1.35vw,22px)}
+.card .warn{margin-top:14px;background:var(--warm);border-radius:8px;padding:10px 14px;font-size:clamp(15px,1.15vw,19px);line-height:1.4;color:#7d3a24}
+.emoji{font-size:clamp(34px,3vw,48px);display:block;margin-bottom:12px}
+
+/* Fórmula */
+.formula{background:var(--ink);color:var(--paper);border-radius:18px;padding:clamp(20px,3vw,40px);font-family:var(--display);font-weight:700;font-size:clamp(28px,3.4vw,56px);line-height:1.1;letter-spacing:-.02em}
+.formula small{display:block;font-family:Arial,sans-serif;font-weight:normal;font-size:clamp(15px,1.1vw,19px);color:var(--lime);letter-spacing:0;margin-bottom:10px}
+.calc{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;font-family:var(--display);font-weight:700;font-size:clamp(26px,2.6vw,44px);margin-top:clamp(18px,3vh,30px)}
+.calc .res{background:var(--lime);padding:2px 14px;border-radius:10px}
+
+/* Cuadrícula de CTR */
+.waffle{display:grid;grid-template-columns:repeat(10,1fr);gap:clamp(4px,.55vw,8px);width:min(100%,460px)}
+.waffle i{aspect-ratio:1;border-radius:6px;background:#dbe5d8;transition:background .25s}
+.waffle i.on{background:var(--green)}
+.toggle{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+.pill{padding:10px 18px;border-radius:30px;border:1px solid var(--line);background:var(--white);font-weight:bold;color:var(--ink);font-size:clamp(15px,1.1vw,18px)}
+.pill[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.waffle-read{font-family:var(--display);font-weight:800;font-size:clamp(30px,3vw,50px);line-height:1;margin-bottom:10px}
+
+/* Comparación */
+.vs{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;margin-top:16px}
+.vs div{background:var(--paper);border-radius:10px;padding:12px;text-align:center}
+.vs b{display:block;font-family:var(--display);font-size:clamp(26px,2.4vw,40px)}
+.vs span{font-size:clamp(13px,1vw,16px);color:var(--muted)}
+.vs em{font-style:normal;font-weight:bold;color:var(--muted)}
+.ok{color:var(--green)}.no{color:var(--orange)}
+
+/* Tabla */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--white)}
+table{width:100%;border-collapse:collapse;min-width:520px}
+th,td{padding:clamp(8px,1.3vh,13px) 14px;text-align:left;font-size:clamp(15px,1.2vw,20px);border-top:1px solid var(--line)}
+thead th{background:#e0e8da;border:0;font-size:clamp(13px,1vw,16px)}
+td.res{font-weight:bold}
+.tag{display:inline-block;border-radius:6px;padding:4px 10px;font-size:.85em}
+.tag.si{background:var(--soft);color:var(--green)}.tag.non{background:var(--warm);color:#94442c}
+
+/* Diagramas */
+.diagram{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:clamp(10px,1.4vw,20px)}
+.diagram svg{display:block;width:100%;height:auto}
+.node rect{fill:var(--white);stroke:#adc2af;stroke-width:2}
+.node.leaf rect{fill:var(--soft);stroke:var(--green)}
+.node text{font:700 22px Arial;fill:var(--ink);text-anchor:middle}
+.node text.sub{font:400 16px Arial;fill:var(--muted)}
+.edge{fill:none;stroke:#a9bfad;stroke-width:3}
+.lbl{font:bold 17px Arial;fill:var(--green)}
+.part{font:bold 15px Arial;fill:var(--orange)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:clamp(14px,1vw,16px);color:var(--muted);margin-top:10px}
+.legend span{display:flex;gap:8px;align-items:center}
+.legend i{width:13px;height:13px;border-radius:50%;display:inline-block}
+
+/* Puente chaqueta-campañas */
+.bridge{display:grid;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--white)}
+.bridge .brow>div,.bridge .hrow>div{padding:clamp(10px,1.8vh,20px) clamp(12px,1.4vw,22px);border-top:1px solid var(--line);font-size:clamp(15px,1.6vw,27px);line-height:1.35}
+.bridge .h{background:#e0e8da;border-top:0!important;font-weight:bold;font-size:clamp(14px,1vw,17px)}
+.bridge .k{font-weight:bold;color:var(--green)}
+.brow,.hrow{display:grid;grid-template-columns:.7fr 1fr 1fr}
+
+/* Hoja que vota */
+.vote{display:flex;gap:clamp(10px,1.4vw,18px);flex-wrap:wrap;margin:10px 0 20px}
+.vote b{width:clamp(54px,5vw,78px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;color:#fff;font-family:var(--display);font-size:clamp(22px,2vw,32px);background:var(--green)}
+.vote b.n{background:var(--orange)}
+
+/* Límites */
+.limits{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(12px,1.6vw,22px)}
+.limits .card{display:flex;gap:16px;align-items:flex-start}
+.limits .num{font-family:var(--display);font-weight:800;font-size:clamp(30px,2.6vw,44px);color:var(--orange);line-height:1}
+
+/* Quiz */
+.quiz{display:grid;gap:clamp(12px,2vh,20px)}
+.q{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:clamp(14px,2vh,22px) clamp(16px,2vw,26px)}
+.q p{font-weight:bold;margin-bottom:12px}
+.opts{display:flex;gap:10px;flex-wrap:wrap}
+.opts button{padding:10px 16px;border-radius:10px;border:1px solid #b7c9bc;background:var(--paper);color:var(--ink);font-size:clamp(15px,1.15vw,19px)}
+.opts button.right{background:var(--green);border-color:var(--green);color:#fff}
+.opts button.wrong{background:var(--warm);border-color:var(--orange)}
+.why{font-size:clamp(15px,1.1vw,18px);color:var(--muted);margin-top:10px;line-height:1.45;min-height:1.4em}
+
+/* Cierre */
+.mission{counter-reset:m;display:grid;gap:14px;margin:0 0 28px;padding:0;list-style:none}
+.mission li{counter-increment:m;display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start;font-size:clamp(18px,1.5vw,25px);line-height:1.35}
+.mission li::before{content:counter(m);width:clamp(38px,3vw,48px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:var(--lime);color:var(--ink);font-family:var(--display);font-weight:800}
+.cta{display:inline-flex;align-items:center;gap:10px;background:var(--lime);color:var(--ink);text-decoration:none;font-family:var(--display);font-weight:800;font-size:clamp(20px,1.7vw,28px);padding:16px 28px;border-radius:14px}
+.cta:hover{background:#e6f6ad}
+.question-big{font-family:var(--display);font-weight:800;font-size:clamp(28px,3vw,50px);line-height:1.05;color:var(--lime);border:2px dashed #5e7b6a;border-radius:18px;padding:clamp(20px,3vw,36px)}
+
+/* Barra inferior */
+.hud{position:fixed;left:0;right:0;bottom:0;height:64px;display:flex;align-items:center;gap:12px;padding:0 clamp(12px,3vw,40px);background:var(--paper);border-top:1px solid var(--line);z-index:10}
+.hud .title{flex:1;min-width:0;font-size:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud .count{font-size:14px;font-weight:bold;white-space:nowrap}
+.hud .stepdots{display:flex;gap:5px}
+.hud .stepdots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.hud .stepdots i.on{background:var(--green)}
+.hbtn{border:1px solid var(--line);background:var(--white);color:var(--ink);border-radius:9px;padding:9px 13px;font-weight:bold;font-size:14px}
+.hbtn.primary{background:var(--green);border-color:var(--green);color:#fff}
+.hbtn[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.progress{position:fixed;left:0;right:0;bottom:64px;height:4px;background:transparent;z-index:11}
+.progress i{display:block;height:100%;background:var(--green);transition:width .3s}
+
+/* Notas del docente */
+.notes{display:none}
+.notes-panel{position:fixed;left:0;right:0;bottom:68px;max-height:34vh;overflow:auto;background:var(--sun);border-top:2px solid #e2c766;padding:16px clamp(16px,4vw,48px);z-index:9;display:none;font-size:17px;line-height:1.5;color:#3d3209}
+body.show-notes .notes-panel{display:block}
+.notes-panel b{color:#5b4710}
+
+dialog{border:1px solid var(--line);border-radius:16px;background:var(--paper);color:var(--ink);padding:24px;width:min(760px,94vw);max-height:85svh}
+dialog::backdrop{background:#183b3ab8}
+#toc-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0}
+#toc-list button{text-align:left;font-weight:normal}
+
+@media(max-width:900px){
+  body{overflow:auto}
+  .grid2,.grid2.wide-left,.grid3,.limits{grid-template-columns:1fr}
+  .hundred{margin:0 auto}.cover-legend{justify-content:flex-start}
+  .slide.active{align-items:flex-start}
+  .fstep{grid-template-columns:1fr}
+  .fstep:nth-child(2) .fbar{width:86%}.fstep:nth-child(3) .fbar{width:68%}
+  .brow,.hrow{grid-template-columns:.8fr 1fr 1fr}
+  .diagram{overflow-x:auto}.diagram svg.wide{min-width:680px}
+  #toc-btn{margin-left:auto}
+  .hud .title,.hud .stepdots,#notes-btn{display:none}
+  #toc-list{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+  .bridge .brow>div,.bridge .hrow>div{font-size:14px;padding:9px}
+  .tally-row{grid-template-columns:1fr auto auto auto;gap:8px}
+  .round{width:40px;height:40px}
+  .hbtn{padding:8px 10px}
+  #fs-btn{display:none}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.hundred i{opacity:1}.hundred i.click{background:#4fae8f}.hundred i.buy{background:var(--lime)}}
+@media print{
+  body{overflow:visible}
+  .hud,.progress,.notes-panel,dialog{display:none!important}
+  .slide{position:relative;inset:auto;display:flex!important;break-after:page;min-height:100vh;overflow:visible}
+  .step,.step-follow{opacity:1!important;transform:none!important}
+  .hundred i{opacity:1;animation:none}.hundred i.click{background:#4fae8f}.hundred i.buy{background:var(--lime)}
+  .dark{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<!-- 1 · Portada -->
+<section class="slide dark" data-title="Portada">
+ <div class="inner grid2 wide-left">
+  <div>
+   <span class="kicker">Clase de marketing y datos</span>
+   <h1>De los clics<br>a las decisiones</h1>
+   <p class="lead" style="margin-top:clamp(18px,3vh,30px);max-width:620px">Cómo una sola pregunta, bien elegida, nos ayuda a leer campañas publicitarias.</p>
+   <div class="cover-meta"><span class="chip">20 minutos</span><span class="chip">Antes del simulador</span><span class="chip">Sin saber nada previo</span></div>
+  </div>
+  <div>
+   <div class="hundred" id="cover-hundred" aria-label="100 puntos: 3 hacen clic y 1 compra" role="img"></div>
+   <div class="cover-legend"><span><b style="background:#35585a"></b>100 ven un anuncio</span><span><b style="background:#4fae8f"></b>3 hacen clic</span><span><b style="background:var(--lime)"></b>1 de ellos compra</span></div>
+  </div>
+ </div>
+ <aside class="notes"><b>1 min.</b> Presenta el tema sin tecnicismos. Señala la cuadrícula: “De cada 100 personas que ven un anuncio, pocas hacen clic y todavía menos compran. Hoy aprenderemos a leer esos números y a usarlos para decidir”.</aside>
+</section>
+
+<!-- 2 · Activación -->
+<section class="slide" data-title="Piensa en un anuncio">
+ <div class="inner grid2">
+  <div>
+   <span class="kicker">Para empezar</span>
+   <h2>Piensa en el último anuncio que viste.</h2>
+   <p class="lead">Levanta la mano cada vez que tu respuesta sea sí. Vamos a contarlas.</p>
+  </div>
+  <div>
+   <div class="tally">
+    <div class="tally-row"><p>¿Lo viste?</p><button class="round" data-t="0" data-d="-1" aria-label="Restar">−</button><output id="t0">0</output><button class="round" data-t="0" data-d="1" aria-label="Sumar">+</button></div>
+    <div class="tally-row step"><p>¿Le hiciste clic?</p><button class="round" data-t="1" data-d="-1" aria-label="Restar">−</button><output id="t1">0</output><button class="round" data-t="1" data-d="1" aria-label="Sumar">+</button></div>
+    <div class="tally-row step"><p>¿Compraste algo?</p><button class="round" data-t="2" data-d="-1" aria-label="Restar">−</button><output id="t2">0</output><button class="round" data-t="2" data-d="1" aria-label="Sumar">+</button></div>
+   </div>
+   <div class="callout step"><p>En cada pregunta hay <strong>menos manos</strong>. Ver, hacer clic y comprar son tres cosas distintas.</p></div>
+  </div>
+ </div>
+ <aside class="notes"><b>2 min.</b> Haz las preguntas una por una (cada clic de Siguiente revela una). Cuenta manos con + y −. Cierra con la idea: cada paso tiene menos personas. Esa caída es lo que vamos a medir.</aside>
+</section>
+
+<!-- 3 · Limonada -->
+<section class="slide" data-title="El puesto de limonada">
+ <div class="inner">
+  <span class="kicker">Parte 1 · Las palabras</span>
+  <h2>Un puesto de limonada lo explica todo.</h2>
+  <div class="funnel">
+   <div class="fstep"><div class="fbar">👀 100 personas ven el cartel</div><div class="fname step"><b>Impresiones</b>veces que se muestra el anuncio</div></div>
+   <div class="fstep step"><div class="fbar">👆 10 se acercan</div><div class="fname step"><b>Clics</b>veces que alguien toca el anuncio</div></div>
+   <div class="fstep step"><div class="fbar">🛒 4 compran</div><div class="fname step"><b>Compras</b>pedidos que se logran</div></div>
+  </div>
+ </div>
+ <aside class="notes"><b>2 min.</b> Primero cuenta la historia del cartel; luego revela el nombre que recibe cada paso en internet. Insiste: el cartel es el anuncio, acercarse es el clic y comprar es comprar en la tienda en línea.</aside>
+</section>
+
+<!-- 4 · Trampas de vocabulario -->
+<section class="slide" data-title="Tres palabras, dos trampas">
+ <div class="inner">
+  <span class="kicker">Parte 1 · Las palabras</span>
+  <h2>Tres palabras que no son lo mismo.</h2>
+  <div class="grid3">
+   <article class="card step"><span class="emoji">👀</span><h3>Impresiones</h3><p>Cuántas veces apareció el anuncio en una pantalla.</p><p class="warn">Si tú lo ves 3 veces, cuenta 3. No son personas distintas.</p></article>
+   <article class="card step"><span class="emoji">👆</span><h3>Clics</h3><p>Cuántas veces alguien tocó el anuncio para ir a la tienda.</p><p class="warn">Un clic muestra interés, no una venta.</p></article>
+   <article class="card step"><span class="emoji">🛒</span><h3>Compras</h3><p>Cuántos pedidos se lograron gracias a la campaña.</p><p class="warn">Es el resultado que de verdad le importa a la tienda.</p></article>
+  </div>
+ </div>
+ <aside class="notes"><b>2 min.</b> Pregunta antes de revelar cada trampa: “Si yo veo el anuncio tres veces, ¿cuántas impresiones son?”. La confusión más común es pensar que impresiones = personas y que clics = ventas.</aside>
+</section>
+
+<!-- 5 · CTR -->
+<section class="slide" data-title="El CTR">
+ <div class="inner grid2">
+  <div>
+   <span class="kicker">Parte 1 · Las palabras</span>
+   <h2>El CTR compara clics con impresiones.</h2>
+   <p class="lead step">En palabras sencillas: <strong style="color:var(--ink)">de cada 100 veces que se mostró el anuncio, ¿cuántas veces alguien hizo clic?</strong></p>
+  </div>
+  <div>
+   <div class="formula"><small>CTR: tasa de clics (en inglés, click-through rate)</small>CTR = clics ÷ impresiones × 100</div>
+   <div class="calc step"><span>100 ÷ 10.000 × 100 =</span><span class="res">1 %</span></div>
+   <p class="muted step" style="margin-top:14px">Si un anuncio se mostró 10.000 veces y tuvo 100 clics, su CTR es 1 %.</p>
+  </div>
+ </div>
+ <aside class="notes"><b>2 min.</b> Haz el cálculo en voz alta con el grupo. Si alguien pregunta por qué ×100: es para leerlo como porcentaje, “de cada 100”.</aside>
+</section>
+
+<!-- 6 · Waffle -->
+<section class="slide" data-title="Así se ve un CTR">
+ <div class="inner grid2">
+  <div>
+   <span class="kicker">Parte 1 · Las palabras</span>
+   <h2>Así se ve un CTR.</h2>
+   <p class="lead">Cada cuadro es una vez que se mostró el anuncio. Los verdes son clics.</p>
+   <div class="toggle" role="group" aria-label="Elegir CTR">
+    <button class="pill" data-ctr="1" aria-pressed="true">CTR 1 %</button>
+    <button class="pill" data-ctr="3" aria-pressed="false">CTR 3 %</button>
+    <button class="pill" data-ctr="10" aria-pressed="false">CTR 10 %</button>
+   </div>
+   <p class="waffle-read" id="waffle-read">1 de cada 100</p>
+   <p class="muted">Un CTR “pequeño” no es raro: la mayoría de las personas ve un anuncio y sigue de largo.</p>
+  </div>
+  <div class="waffle" id="waffle" role="img" aria-label="Cuadrícula de 100 impresiones"></div>
+ </div>
+ <aside class="notes"><b>1 min.</b> Cambia entre 1 %, 3 % y 10 %. Pregunta: “¿Qué anuncio llamó más la atención?”. Aclara que el CTR habla de atención, todavía no de compras.</aside>
+</section>
+
+<!-- 7 · Dos trampas -->
+<section class="slide" data-title="Dos trampas del CTR">
+ <div class="inner">
+  <span class="kicker">Parte 1 · Las palabras</span>
+  <h2>Dos trampas al leer el CTR.</h2>
+  <div class="grid2">
+   <article class="card step">
+    <h3>Más clics no siempre es más CTR</h3>
+    <p>La campaña E tuvo más clics que la H, pero se mostró muchas más veces.</p>
+    <div class="vs"><div><b>1,8 %</b><span>E · 450 clics ÷ 25.000</span></div><em>vs</em><div><b class="ok">3 %</b><span>H · 360 clics ÷ 12.000</span></div></div>
+   </article>
+   <article class="card step">
+    <h3>Más CTR no asegura más compras</h3>
+    <p>La campaña E tiene mayor CTR que la D, pero vendió menos.</p>
+    <div class="vs"><div><b class="ok">23</b><span>D · CTR 1,4 % · compras</span></div><em>vs</em><div><b class="no">16</b><span>E · CTR 1,8 % · compras</span></div></div>
+   </article>
+  </div>
+ </div>
+ <aside class="notes"><b>2 min.</b> Son datos reales del caso que verán en el simulador. La primera trampa explica por qué usamos una tasa y no solo clics. La segunda prepara la idea de que ninguna regla será perfecta.</aside>
+</section>
+
+<!-- 8 · El caso -->
+<section class="slide" data-title="Nuestro caso">
+ <div class="inner grid2 wide-left">
+  <div>
+   <div class="tablewrap">
+    <table>
+     <thead><tr><th>Campaña</th><th>CTR</th><th>Compras</th><th>¿Llegó a 20?</th></tr></thead>
+     <tbody id="case-table"></tbody>
+    </table>
+   </div>
+  </div>
+  <div>
+   <span class="kicker">El caso</span>
+   <h2>Una tienda de zapatos. Ocho campañas.</h2>
+   <p class="lead">La meta de cada campaña era lograr <strong style="color:var(--ink)">al menos 20 compras</strong>.</p>
+   <div class="callout step"><p><strong>Cuatro cumplieron y cuatro no.</strong> ¿Podemos separarlas usando solo el CTR?</p></div>
+  </div>
+ </div>
+ <aside class="notes"><b>2 min.</b> El caso es simulado. Pide que observen la columna CTR de arriba abajo: está ordenada de menor a mayor. La última columna aparece con el siguiente clic: invita a buscar un patrón antes de revelarla.</aside>
+</section>
+
+<!-- 9 · Árbol chaqueta -->
+<section class="slide dark" data-title="¿Qué es un árbol de decisión?">
+ <div class="inner grid2">
+  <div>
+   <span class="kicker">Parte 2 · El árbol</span>
+   <h2>Un árbol de decisión es decidir con una pregunta.</h2>
+   <p class="lead">Cada mañana decides si llevar chaqueta. Sin darte cuenta, te preguntas: <strong style="color:var(--lime)">¿hace frío?</strong></p>
+  </div>
+  <div class="diagram">
+   <svg viewBox="0 0 620 330" role="img" aria-label="Árbol: ¿temperatura menor o igual a 15 grados? Sí: lleva chaqueta. No: no hace falta.">
+    <g class="node"><rect x="150" y="30" width="320" height="76" rx="14"/><text x="310" y="64">¿Temperatura ≤ 15 °C?</text><text class="sub" x="310" y="90">una pregunta</text></g>
+    <text class="part" x="480" y="60">← raíz</text>
+    <g class="step"><path class="edge" d="M310 106V142H155V186"/><path class="edge" d="M310 106V142H465V186"/><text class="lbl" x="168" y="170">Sí</text><text class="lbl" x="478" y="170">No</text><text class="part" x="250" y="135">ramas</text></g>
+    <g class="step"><g class="node leaf"><rect x="25" y="186" width="260" height="96" rx="14"/><text x="155" y="230">🧥 Lleva chaqueta</text><text class="sub" x="155" y="258">una respuesta</text></g><g class="node leaf"><rect x="335" y="186" width="260" height="96" rx="14"/><text x="465" y="230">👕 No hace falta</text><text class="sub" x="465" y="258">otra respuesta</text></g><text class="part" x="250" y="310">hojas ↑</text></g>
+   </svg>
+  </div>
+ </div>
+ <aside class="notes"><b>2 min.</b> Construye el árbol con dos clics: primero las ramas, luego las hojas. Nombra las partes: la raíz es la pregunta, las ramas son los caminos y las hojas son las respuestas. Es un árbol al revés: la raíz arriba.</aside>
+</section>
+
+<!-- 10 · De dónde sale el 15 -->
+<section class="slide" data-title="¿De dónde sale el 15?">
+ <div class="inner">
+  <span class="kicker">Parte 2 · El árbol</span>
+  <h2>¿De dónde sale el 15? De mirar el pasado.</h2>
+  <div class="diagram"><svg class="wide" id="days-svg" viewBox="0 0 1000 230" role="img" aria-label="Ocho días ordenados por temperatura, con un corte en 15 grados"></svg></div>
+  <div class="legend"><span><i style="background:var(--green)"></i>Llevó chaqueta</span><span><i style="background:var(--orange)"></i>No llevó</span></div>
+  <div class="callout step"><p>El corte en 15 °C acierta en <strong>7 de 8 días</strong>. El día de 19 °C llovió y la persona llevó chaqueta igual: <strong>ninguna regla sencilla es perfecta</strong>.</p></div>
+ </div>
+ <aside class="notes"><b>2 min.</b> Primero muestra los días, luego los colores y al final el corte. Pregunta: “¿Dónde pondrían la línea?”. El 15 está justo entre 14 y 16, los dos días vecinos con resultados distintos. Ese mismo método usaremos con el CTR.</aside>
+</section>
+
+<!-- 11 · Puente -->
+<section class="slide" data-title="De la chaqueta a las campañas">
+ <div class="inner">
+  <span class="kicker">Parte 3 · Juntar todo</span>
+  <h2>Mismo árbol, otro tema.</h2>
+  <div class="bridge">
+   <div class="hrow"><div class="h">Parte</div><div class="h">🧥 Chaqueta</div><div class="h">📣 Campañas</div></div>
+   <div class="brow step"><div class="k">Lo que miramos (X)</div><div>La temperatura</div><div>El CTR</div></div>
+   <div class="brow step"><div class="k">Lo que queremos adivinar (Y)</div><div>¿Llevó chaqueta?</div><div>¿Llegó a 20 compras?</div></div>
+   <div class="brow step"><div class="k">La pregunta (raíz)</div><div>¿Temperatura ≤ 15 °C?</div><div>¿CTR ≤ punto de corte?</div></div>
+   <div class="brow step"><div class="k">La respuesta (hoja)</div><div>Lleva o no lleva</div><div>Cumple o no cumple</div></div>
+  </div>
+ </div>
+ <aside class="notes"><b>2 min.</b> Revela fila por fila y pide al grupo que complete la columna de campañas antes de mostrarla. X es la pista; Y es lo que queremos adivinar. Importante: las compras definen Y, por eso no pueden ser la pista.</aside>
+</section>
+
+<!-- 12 · Probar un corte -->
+<section class="slide" data-title="Probemos un corte">
+ <div class="inner">
+  <span class="kicker">Parte 3 · Juntar todo</span>
+  <h2>Probemos un corte: CTR ≤ 1,6 %.</h2>
+  <div class="diagram"><svg class="wide" id="cut-svg" viewBox="0 0 1000 250" role="img" aria-label="Ocho campañas ordenadas por CTR con un corte en 1,6 por ciento"></svg></div>
+  <div class="legend"><span><i style="background:var(--green)"></i>Llegó a 20 compras</span><span><i style="background:var(--orange)"></i>No llegó</span></div>
+  <div class="grid2 step" style="margin-top:18px;align-items:stretch">
+   <div class="card"><h3>Rama Sí · CTR ≤ 1,6 %</h3><p>A, B, C y D. Solo <strong>1 de 4</strong> cumplió → la hoja predice <strong class="no">no cumple</strong>.</p></div>
+   <div class="card"><h3>Rama No · CTR &gt; 1,6 %</h3><p>E, F, G y H. <strong>3 de 4</strong> cumplieron → la hoja predice <strong class="ok">cumple</strong>.</p></div>
+  </div>
+ </div>
+ <aside class="notes"><b>3 min.</b> Avanza en cuatro pasos: campañas, colores, corte y grupos. Resultado: acierta 6 de 8 (fallan D y E). No reveles si hay un corte mejor: esa es la misión del simulador.</aside>
+</section>
+
+<!-- 13 · La hoja vota -->
+<section class="slide" data-title="La hoja vota">
+ <div class="inner grid2">
+  <div>
+   <span class="kicker">Parte 3 · Juntar todo</span>
+   <h2>Cada hoja decide por mayoría.</h2>
+   <p class="lead">En la rama No quedaron cuatro campañas. Tres cumplieron. Gana lo que más se repite: <strong style="color:var(--ink)">“cumple”</strong>.</p>
+  </div>
+  <div>
+   <div class="vote"><b>F</b><b>G</b><b>H</b><b class="n">E</b></div>
+   <p class="big step" style="font-size:clamp(34px,3.4vw,56px);line-height:1">3 de 4 = 75 %</p>
+   <div class="callout step"><p>Ese 75 % es <strong>lo que pasó antes</strong> en ese grupo. No es una garantía para la próxima campaña.</p></div>
+  </div>
+ </div>
+ <aside class="notes"><b>1 min.</b> Usa la analogía de la caja: si hay 3 manzanas y 1 pera, decimos “caja de manzanas”. Insiste en que el porcentaje describe el pasado; no promete el futuro.</aside>
+</section>
+
+<!-- 14 · Límites -->
+<section class="slide" data-title="Lo que el árbol no dice">
+ <div class="inner">
+  <span class="kicker">Parte 3 · Juntar todo</span>
+  <h2>Lo que el árbol no te dice.</h2>
+  <div class="limits">
+   <div class="card step"><span class="num">1</span><p><strong>Se equivoca.</strong> Incluso el mejor corte deja alguna campaña mal clasificada.</p></div>
+   <div class="card step"><span class="num">2</span><p><strong>Aprendió de pocos casos.</strong> Ocho campañas son un ejemplo para practicar, no una ley.</p></div>
+   <div class="card step"><span class="num">3</span><p><strong>No demuestra causas.</strong> Que vayan juntos CTR y compras no prueba que subir el CTR cause más ventas.</p></div>
+   <div class="card step"><span class="num">4</span><p><strong>Hay que comprobarlo.</strong> Para confiar, se prueba con campañas nuevas que no se usaron para aprender.</p></div>
+  </div>
+ </div>
+ <aside class="notes"><b>2 min.</b> Este es el mensaje de responsabilidad: un modelo ayuda a decidir, no reemplaza el criterio. Conecta con costos: una campaña puede cumplir 20 compras y aun así perder dinero.</aside>
+</section>
+
+<!-- 15 · Quiz -->
+<section class="slide" data-title="Comprueba antes de practicar">
+ <div class="inner">
+  <span class="kicker">Antes del simulador</span>
+  <h2>Tres preguntas rápidas.</h2>
+  <div class="quiz">
+   <div class="q"><p>1. Un anuncio se mostró 5.000 veces y tuvo 50 clics. ¿Cuál es su CTR?</p><div class="opts" data-why="50 ÷ 5.000 × 100 = 1 %. De cada 100 veces que se mostró, hubo 1 clic."><button>0,1 %</button><button data-ok>1 %</button><button>10 %</button></div><p class="why" aria-live="polite"></p></div>
+   <div class="q"><p>2. En una hoja, 3 de 4 campañas cumplieron la meta. ¿Qué predice esa hoja?</p><div class="opts" data-why="Gana la mayoría: 3 cumplieron y 1 no, así que la hoja predice “cumple”."><button data-ok>Cumple</button><button>No cumple</button><button>No se puede saber</button></div><p class="why" aria-live="polite"></p></div>
+   <div class="q"><p>3. Una campaña tiene un CTR muy alto. ¿Seguro llegará a 20 compras?</p><div class="opts" data-why="No. El CTR mide clics, no compras. Recuerda la campaña E: más CTR que D, pero menos ventas."><button>Sí, seguro</button><button data-ok>No necesariamente</button></div><p class="why" aria-live="polite"></p></div>
+  </div>
+ </div>
+ <aside class="notes"><b>2 min.</b> Pide que respondan a mano alzada antes de tocar la opción. Si muchos fallan la pregunta 1, repite la fórmula con la cuadrícula de 100.</aside>
+</section>
+
+<!-- 16 · Ahora tú -->
+<section class="slide dark" data-title="Ahora tú">
+ <div class="inner grid2">
+  <div>
+   <span class="kicker">Tu misión en el simulador</span>
+   <h2>Ahora tú construyes el árbol.</h2>
+   <ol class="mission">
+    <li>Mueve la línea de corte y observa los dos grupos.</li>
+    <li>Compara todos los cortes y encuentra los que más aciertan.</li>
+    <li>Explica qué campaña falla y por qué.</li>
+   </ol>
+   <a class="cta" href="index_arbol.html">Abrir el simulador →</a>
+  </div>
+  <div class="question-big">Probamos 1,6 % y acertamos 6 de 8.<br><br>¿Existe un corte mejor?</div>
+ </div>
+ <aside class="notes"><b>Cierre.</b> Deja la pregunta abierta en pantalla mientras abren el simulador. El archivo index_arbol.html debe estar en la misma carpeta que esta presentación. Al terminar el simulador obtienen su certificado.</aside>
+</section>
+
+<div class="progress"><i id="bar"></i></div>
+<div class="notes-panel" id="notes-panel" aria-live="polite"></div>
+<nav class="hud" aria-label="Controles de la presentación">
+ <button class="hbtn" id="prev" aria-label="Anterior">←</button>
+ <span class="count" id="count"></span>
+ <span class="stepdots" id="stepdots" aria-hidden="true"></span>
+ <span class="title" id="slide-title"></span>
+ <button class="hbtn" id="notes-btn" aria-pressed="false" title="Tecla N">Notas</button>
+ <button class="hbtn" id="toc-btn">Índice</button>
+ <button class="hbtn" id="fs-btn" aria-label="Pantalla completa" title="Tecla F">⛶</button>
+ <button class="hbtn primary" id="next">Siguiente →</button>
+</nav>
+<dialog id="toc"><h3>Diapositivas</h3><div id="toc-list"></div><button class="hbtn" id="toc-close">Cerrar</button></dialog>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const slides=[...document.querySelectorAll('.slide')];
+let cur=0;
+
+/* Portada: 100 puntos, 3 clics, 1 compra */
+(()=>{const box=$('cover-hundred'),clicks=new Set([23,57,81]),buy=57;for(let i=0;i<100;i++){const d=document.createElement('i');d.style.animationDelay=(i*9)+'ms'+(clicks.has(i)?', '+(1300+(i===buy?500:0))+'ms':'');if(clicks.has(i))d.className=i===buy?'buy':'click';box.append(d);}})();
+
+/* Conteo de manos */
+const tallies=[0,0,0];
+document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{const t=+b.dataset.t;tallies[t]=Math.max(0,tallies[t]+ +b.dataset.d);$('t'+t).textContent=tallies[t];});
+
+/* Cuadrícula de CTR */
+const waffle=$('waffle');for(let i=0;i<100;i++)waffle.append(document.createElement('i'));
+function setWaffle(n){[...waffle.children].forEach((c,i)=>c.classList.toggle('on',i<n));$('waffle-read').textContent=n+' de cada 100';document.querySelectorAll('[data-ctr]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.ctr===n)));}
+document.querySelectorAll('[data-ctr]').forEach(b=>b.onclick=()=>setWaffle(+b.dataset.ctr));setWaffle(1);
+
+/* Datos del caso (iguales al simulador) */
+const CAMPAIGNS=[{id:'A',impressions:16000,clicks:80,purchases:5},{id:'B',impressions:25000,clicks:200,purchases:9},{id:'C',impressions:30000,clicks:330,purchases:14},{id:'D',impressions:20000,clicks:280,purchases:23},{id:'E',impressions:25000,clicks:450,purchases:16},{id:'F',impressions:18000,clicks:378,purchases:27},{id:'G',impressions:14000,clicks:350,purchases:31},{id:'H',impressions:12000,clicks:360,purchases:38}].map(c=>({...c,ctr:Math.round(c.clicks/c.impressions*10000)/100,y:c.purchases>=20?1:0}));
+const fmt=n=>n.toLocaleString('es-CO',{maximumFractionDigits:2});
+$('case-table').innerHTML=CAMPAIGNS.map(c=>'<tr><td><strong>'+c.id+'</strong></td><td>'+fmt(c.ctr)+' %</td><td>'+c.purchases+'</td><td class="res"><span class="step"><span class="tag '+(c.y?'si':'non')+'">'+(c.y?'Sí':'No')+'</span></span></td></tr>').join('');
+/* La columna se revela de una vez: agrupar en un solo paso */
+(()=>{const cells=[...document.querySelectorAll('#case-table .step')];cells.forEach((c,i)=>{if(i>0)c.classList.replace('step','step-follow');});})();
+
+/* Dibujo de puntos sobre una línea con corte */
+function lineChart(svg,items,{min,max,cut,unit,label,steps}){const X=v=>70+(v-min)/(max-min)*860;let h='';
+ h+='<line x1="50" y1="110" x2="950" y2="110" stroke="#9db2a1" stroke-width="2"/>';
+ if(steps)h+='<g class="step">';
+ h+='<rect x="40" y="40" width="'+(X(cut)-40)+'" height="140" rx="12" fill="#edf2e5"/><rect x="'+X(cut)+'" y="40" width="'+(960-X(cut))+'" height="140" rx="12" fill="#f8eee3"/>';
+ if(steps)h+='</g>';
+ items.forEach(it=>{h+='<circle cx="'+X(it.v)+'" cy="110" r="25" fill="#9fb3a6"/>';});
+ h+=(steps?'<g class="step">':'<g>');items.forEach(it=>{h+='<circle cx="'+X(it.v)+'" cy="110" r="25" fill="'+(it.y?'#176b58':'#bb5a3a')+'"/>';});h+='</g>';
+ items.forEach(it=>{h+='<text x="'+X(it.v)+'" y="117" fill="#fff" font-family="Arial" font-weight="bold" font-size="19" text-anchor="middle">'+it.t+'</text><text x="'+X(it.v)+'" y="165" fill="#546f6c" font-family="Arial" font-size="16" text-anchor="middle">'+fmt(it.v)+unit+'</text>';});
+ h+=(steps?'<g class="step">':'<g>')+'<line x1="'+X(cut)+'" y1="28" x2="'+X(cut)+'" y2="195" stroke="#193a3b" stroke-width="4" stroke-dasharray="7 5"/><text x="'+X(cut)+'" y="20" fill="#193a3b" font-family="Arial" font-weight="bold" font-size="18" text-anchor="middle">'+label+'</text><text x="'+(X(cut)-14)+'" y="222" fill="#176b58" font-family="Arial" font-weight="bold" font-size="17" text-anchor="end">Sí · ≤</text><text x="'+(X(cut)+14)+'" y="222" fill="#94442c" font-family="Arial" font-weight="bold" font-size="17">No · &gt;</text></g>';
+ svg.innerHTML=h;}
+/* Días: el fondo de grupos se muestra junto con el corte */
+const days=[6,9,12,14,16,19,23,27].map(v=>({v,t:'',y:[6,9,12,14,19].includes(v)?1:0}));
+lineChart($('days-svg'),days,{min:4,max:29,cut:15,unit:' °C',label:'corte 15 °C',steps:true});
+lineChart($('cut-svg'),CAMPAIGNS.map(c=>({v:c.ctr,t:c.id,y:c.y})),{min:.3,max:3.2,cut:1.6,unit:' %',label:'corte 1,6 %',steps:true});
+/* Orden de pasos en los gráficos: colores → zonas + corte */
+['days-svg','cut-svg'].forEach(id=>{const s=$(id),g=[...s.querySelectorAll(':scope > g.step')];/* g[0]=zonas, g[1]=colores, g[2]=corte */if(g.length===3){g[0].classList.replace('step','step-follow');g[0].dataset.with='cut';/* zonas detrás */s.insertBefore(g[0],s.firstChild);g[2].dataset.lead='1';}});
+
+/* Quiz */
+document.querySelectorAll('.opts').forEach(o=>{o.querySelectorAll('button').forEach(b=>b.onclick=()=>{o.querySelectorAll('button').forEach(x=>x.classList.remove('right','wrong'));const ok=b.hasAttribute('data-ok');b.classList.add(ok?'right':'wrong');if(!ok)o.querySelector('[data-ok]').classList.add('right');o.nextElementSibling.textContent=(ok?'¡Correcto! ':'Revisa: ')+o.dataset.why;});});
+
+/* Pasos: los "step-follow" aparecen junto al paso que los acompaña */
+function stepsOf(s){return [...s.querySelectorAll('.step')];}
+function syncFollowers(s){const steps=stepsOf(s);
+ /* columna del caso */const tbl=s.querySelector('#case-table');if(tbl){const lead=tbl.querySelector('.step');tbl.querySelectorAll('.step-follow').forEach(f=>f.classList.toggle('shown',!!lead&&lead.classList.contains('shown')));}
+ s.querySelectorAll('svg').forEach(svg=>{const lead=svg.querySelector('[data-lead]');svg.querySelectorAll('.step-follow').forEach(f=>f.classList.toggle('shown',!!lead&&lead.classList.contains('shown')));});}
+function render(){slides.forEach((s,i)=>{s.classList.toggle('active',i===cur);s.setAttribute('aria-hidden',String(i!==cur));});
+ const s=slides[cur],st=stepsOf(s),shown=st.filter(e=>e.classList.contains('shown')).length;syncFollowers(s);
+ $('count').textContent=String(cur+1).padStart(2,'0')+' / '+slides.length;$('slide-title').textContent=s.dataset.title;
+ $('stepdots').innerHTML=st.map((e,i)=>'<i class="'+(i<shown?'on':'')+'"></i>').join('');
+ $('bar').style.width=((cur+(st.length?shown/st.length:1))/slides.length*100)+'%';
+ $('prev').disabled=cur===0&&shown===0;const last=cur===slides.length-1&&shown===st.length;$('next').disabled=last;$('next').textContent=shown<st.length?'Mostrar →':'Siguiente →';
+ const n=s.querySelector('.notes');$('notes-panel').innerHTML=n?n.innerHTML:'';
+ if(location.hash!=='#'+(cur+1))history.replaceState(null,'','#'+(cur+1));}
+function go(i,all){cur=Math.max(0,Math.min(slides.length-1,i));stepsOf(slides[cur]).forEach(e=>e.classList.toggle('shown',!!all));slides[cur].scrollTop=0;render();}
+function next(){const hidden=stepsOf(slides[cur]).filter(e=>!e.classList.contains('shown'));if(hidden.length){hidden[0].classList.add('shown');render();}else if(cur<slides.length-1)go(cur+1,false);}
+function prev(){const shown=stepsOf(slides[cur]).filter(e=>e.classList.contains('shown'));if(shown.length){shown[shown.length-1].classList.remove('shown');render();}else if(cur>0)go(cur-1,true);}
+$('next').onclick=next;$('prev').onclick=prev;
+function toggleNotes(){const on=document.body.classList.toggle('show-notes');$('notes-btn').setAttribute('aria-pressed',String(on));}
+$('notes-btn').onclick=toggleNotes;
+async function fs(){try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{}}
+$('fs-btn').onclick=fs;
+slides.forEach((s,i)=>{const b=document.createElement('button');b.className='hbtn';b.textContent=String(i+1).padStart(2,'0')+' · '+s.dataset.title;b.onclick=()=>{go(i,true);$('toc').close();};$('toc-list').append(b);});
+$('toc-btn').onclick=()=>$('toc').showModal();$('toc-close').onclick=()=>$('toc').close();
+document.addEventListener('keydown',e=>{if($('toc').open)return;const k=e.key;
+ if(['ArrowRight','PageDown',' '].includes(k)){if(k===' '&&/^(BUTTON|A)$/.test(e.target.tagName))return;e.preventDefault();next();}
+ else if(['ArrowLeft','PageUp'].includes(k)){e.preventDefault();prev();}
+ else if(k==='Home')go(0,false);else if(k==='End')go(slides.length-1,true);
+ else if(k==='n'||k==='N')toggleNotes();else if(k==='f'||k==='F')fs();});
+let tx=null;document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;},{passive:true});
+document.addEventListener('touchend',e=>{if(tx===null)return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>70)(dx<0?next:prev)();tx=null;},{passive:true});
+window.addEventListener('beforeprint',()=>document.querySelectorAll('.step,.step-follow').forEach(e=>e.classList.add('shown')));
+const start=parseInt(location.hash.slice(1),10);go(Number.isInteger(start)&&start>0?start-1:0,false);
+</script>
+</body>
+</html>
